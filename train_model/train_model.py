@@ -435,25 +435,8 @@ def train_optimized_model(model_name, best_params, X_train, y_train, X_test, y_t
             "training_time_seconds": training_time
         })
 
-        print("\n📈 Generando visualizaciones...")
-        
-        # Usar directorio temporal del sistema
-        with tempfile.TemporaryDirectory() as temp_dir:
-            plots_dir = Path(temp_dir)
-            
-            feat_imp_path = plots_dir / f"{model_name}_feature_importance.png"
-            if create_feature_importance_plot(pipeline, feature_names, feat_imp_path):
-                mlflow.log_artifact(feat_imp_path)
-
-            actual_pred_path = plots_dir / f"{model_name}_actual_vs_predicted.png"
-            create_actual_vs_predicted_plot(cv_results['fold_predictions'], actual_pred_path)
-            mlflow.log_artifact(actual_pred_path)
-
-            residuals_path = plots_dir / f"{model_name}_residuals.png"
-            create_residuals_plot(cv_results['fold_predictions'], residuals_path)
-            mlflow.log_artifact(residuals_path)
-        
-        # El directorio temporal se limpia automáticamente al salir del 'with'
+        # Visualizaciones deshabilitadas para CI/CD
+        print("\n✅ Métricas registradas en MLflow (visualizaciones omitidas)")
 
         input_example = X_train.head(5)
         mlflow.sklearn.log_model(
