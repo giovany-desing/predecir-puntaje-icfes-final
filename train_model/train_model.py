@@ -504,9 +504,11 @@ def main():
     print(f"\n📊 Split de datos:")
     print(f"   - Train: {len(X_train)} samples")
     print(f"   - Test:  {len(X_test)} samples")
+    
+    current_working_directory = os.getcwd()
 
     # Configurar MLflow
-    mlflow.set_tracking_uri("file:./mlruns")
+    mlflow.set_tracking_uri(f"file:{current_working_directory}/mlruns")
     mlflow.set_experiment(EXPERIMENT_NAME)
     print(f"\n✅ MLflow configurado: {EXPERIMENT_NAME}")
 
