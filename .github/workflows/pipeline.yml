@@ -1,0 +1,64 @@
+name: CI/CD Pipeline - Train & Deploy to Render
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-train-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    # --- FASE 1: PREPARACIÓN Y DATOS (DVC + AWS) ---
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.9"
+
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install "dvc[s3]"  # Necesario para que DVC hable con AWS S3
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Pull Data with DVC
+      # Esto descargará tus datos y modelos rastreados por DVC desde S3
+      run: dvc pull
+
+    # --- FASE 2: ENTRENAMIENTO (CI) ---
+    - name: Train Model
+      run: python train_model/train_model.py
+      # Esto genera el archivo .pkl en la carpeta /models del runner
+
+    # --- FASE 3: EMPAQUETADO DOCKER (CD) ---
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build and Push Docker Image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        # Plataforma requerida por Render para evitar el error 'invalid platform'
+        platforms: linux/amd64 
+        # REEMPLAZA TU_USUARIO con 3016953459
+        tags: 3016953459/prediccion-icfes:latest 
+
+    # --- FASE 4: DESPLIEGUE EN RENDER ---
+    - name: Trigger Render Deployment
+      run: |
+        # Llama al webhook para notificar a Render que hay una nueva imagen lista
+        curl -X GET ${{ secrets.RENDER_DEPLOY_HOOK }}
