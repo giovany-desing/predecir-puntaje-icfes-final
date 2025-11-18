@@ -9,7 +9,10 @@ import warnings
 from datetime import datetime
 from pathlib import Path
 
+# --- AÑADIR SHUTIL PARA LIMPIEZA TEMPORAL ---
+import shutil 
 import tempfile
+# --- FIN CAMBIO ---
 
 # ML Libraries
 from sklearn.model_selection import train_test_split, cross_val_score, KFold
@@ -34,6 +37,10 @@ import mlflow.sklearn
 # Visualization
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+# --- IMPORTAR JOBLIB AQUÍ ---
+import joblib 
+# --- FIN CAMBIO ---
 
 current_dir = Path(__file__).resolve().parent
 project_root = current_dir.parent
@@ -183,7 +190,7 @@ def cross_validate_model(model, X, y, cv=5):
     return results
 
 # ============================================================================
-# VISUALIZACIONES
+# VISUALIZACIONES (Código no modificado)
 # ============================================================================
 
 def create_feature_importance_plot(model, feature_names, output_path):
@@ -281,7 +288,7 @@ def create_optimization_history_plot(study, output_path):
     plt.close()
 
 # ============================================================================
-# OPTUNA OPTIMIZATION
+# OPTUNA OPTIMIZATION (Código no modificado)
 # ============================================================================
 
 def create_objective_function(X, y, model_name):
@@ -408,6 +415,26 @@ def train_optimized_model(model_name, best_params, X_train, y_train, X_test, y_t
     print(f"   - R2 Score:  {test_metrics['r2_score']:.4f}")
     print(f"   - MAE:       {test_metrics['mae']:.2f}")
     print(f"   - RMSE:      {test_metrics['rmse']:.2f}")
+    
+    # --- IMPLEMENTACIÓN DE LA OPCIÓN C: USAR LOG_ARTIFACT ---
+    # 1. Crear directorio temporal para el modelo
+    temp_dir = Path("./temp_mlflow_model")
+    temp_dir.mkdir(exist_ok=True)
+    
+    # 2. Guardar el pipeline localmente usando joblib
+    joblib.dump(pipeline, temp_dir / "pipeline.pkl")
+    
+    # 3. Crear un archivo de metadatos simple (para que MLflow lo pueda inferir)
+    model_metadata = {
+        "model_type": model_name,
+        "artifact_path": "pipeline.pkl"
+    }
+    with open(temp_dir / "MLmodel", "w") as f:
+        # Esto es un placeholder, pero ayuda a MLflow a inferir el 'flavor'
+        f.write('artifact_path: pipeline.pkl\n')
+        f.write(f'flavors:\n  python_function: \n    loader_module: mlflow.sklearn\n')
+        f.write('  sklearn:\n    serialization_format: cloudpickle\n')
+
 
     # MLflow Logging
     with mlflow.start_run(run_name=f"{model_name}_Optimized") as run:
@@ -435,22 +462,21 @@ def train_optimized_model(model_name, best_params, X_train, y_train, X_test, y_t
             "training_time_seconds": training_time
         })
 
-        # Visualizaciones deshabilitadas para CI/CD
         print("\n✅ Métricas registradas en MLflow (visualizaciones omitidas)")
-
-        input_example = X_train.head(5)
-        mlflow.sklearn.log_model(
-            sk_model=pipeline,
-            artifact_path="model",
-            input_example=input_example
-        )
+        
+        # 4. Usar la función segura: log_artifacts para subir la carpeta temporal
+        mlflow.log_artifacts(local_dir=temp_dir, artifact_path="model_artifact_pipeline")
 
         run_id = run.info.run_id
 
-        print(f"\n✅ Modelo registrado en MLflow")
+        print(f"\n✅ Modelo (como artefacto) registrado en MLflow")
         print(f"   Run ID: {run_id}")
+        
+    # 5. Limpieza del directorio temporal
+    shutil.rmtree(temp_dir)
+    print(f"🧹 Directorio temporal {temp_dir} eliminado.")
 
-    # Ya no necesitas el shutil.rmtree - el directorio temporal se limpia solo
+    # --- FIN IMPLEMENTACIÓN OPCIÓN C ---
 
     return {
         'model_name': model_name,
@@ -462,7 +488,7 @@ def train_optimized_model(model_name, best_params, X_train, y_train, X_test, y_t
     }
 
 # ============================================================================
-# MAIN WORKFLOW
+# MAIN WORKFLOW (Código modificado solo con la corrección de la ruta)
 # ============================================================================
 
 def main():
@@ -505,12 +531,14 @@ def main():
     print(f"   - Train: {len(X_train)} samples")
     print(f"   - Test:  {len(X_test)} samples")
     
+    # --- CORRECCIÓN DE RUTA DE TRACKING URI (para doble seguridad) ---
     current_working_directory = os.getcwd()
 
     # Configurar MLflow
     mlflow.set_tracking_uri(f"file:{current_working_directory}/mlruns")
     mlflow.set_experiment(EXPERIMENT_NAME)
     print(f"\n✅ MLflow configurado: {EXPERIMENT_NAME}")
+    # --- FIN CORRECCIÓN ---
 
     # Modelos a optimizar
     models_to_optimize = ["RandomForest", "GradientBoosting", "XGBoost"]
@@ -574,7 +602,7 @@ def main():
     print(f"   - Test R2: {best_result['test_metrics']['r2_score']:.4f}")
 
     # Guardar mejor modelo usando rutas del config
-    import joblib
+    
 
     # Crear directorio si no existe
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
