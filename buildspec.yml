@@ -1,0 +1,47 @@
+version: 0.2
+
+phases:
+  # --- FASE 1: INSTALACIÓN ---
+  install:
+    commands:
+      - echo "Instalando Python, DVC y dependencias..."
+      - pip install -r requirements.txt
+      - pip install "dvc[s3]"
+
+  # --- FASE 2: PRE-BUILD (AUTENTICACIÓN Y DATOS) ---
+  pre_build:
+    commands:
+      - echo "Descargando datos con DVC desde S3..."
+      - dvc pull 
+
+      # Autenticación en Docker Hub (usando variables de entorno seguras de AWS)
+      - echo "Iniciando sesión en Docker Hub..."
+      - docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+
+  # --- FASE 3: BUILD (ENTRENAMIENTO y DOCKER) ---
+  build:
+    commands:
+      - echo "Entrenando el modelo..."
+      - python train_model/train_model.py
+
+      - echo "Construyendo la imagen Docker..."
+      - REPOSITORY_URI=3016953459/prediccion-icfes # <--- REVISA ESTE USUARIO
+      - IMAGE_TAG=latest
+      - docker build -t $REPOSITORY_URI:$IMAGE_TAG .
+
+  # --- FASE 4: POST-BUILD (PUSH y DEPLOY HOOK) ---
+  post_build:
+    commands:
+      - echo "Subiendo imagen Docker a Docker Hub..."
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+
+      # Notificación final a Render
+      - echo "Activando Deploy Hook de Render..."
+      - curl -X GET $RENDER_DEPLOY_HOOK
+
+# Este artifact no se usa, pero es necesario para la sintaxis de CodeBuild
+artifacts:
+  files:
+    - '**/*'
+  base-directory: .
+  discard-paths: yes
