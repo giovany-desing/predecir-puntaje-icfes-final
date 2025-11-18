@@ -415,26 +415,6 @@ def train_optimized_model(model_name, best_params, X_train, y_train, X_test, y_t
     print(f"   - R2 Score:  {test_metrics['r2_score']:.4f}")
     print(f"   - MAE:       {test_metrics['mae']:.2f}")
     print(f"   - RMSE:      {test_metrics['rmse']:.2f}")
-    
-    # --- IMPLEMENTACIÓN DE LA OPCIÓN C: USAR LOG_ARTIFACT ---
-    # 1. Crear directorio temporal para el modelo
-    temp_dir = Path("./temp_mlflow_model")
-    temp_dir.mkdir(exist_ok=True)
-    
-    # 2. Guardar el pipeline localmente usando joblib
-    joblib.dump(pipeline, temp_dir / "pipeline.pkl")
-    
-    # 3. Crear un archivo de metadatos simple (para que MLflow lo pueda inferir)
-    model_metadata = {
-        "model_type": model_name,
-        "artifact_path": "pipeline.pkl"
-    }
-    with open(temp_dir / "MLmodel", "w") as f:
-        # Esto es un placeholder, pero ayuda a MLflow a inferir el 'flavor'
-        f.write('artifact_path: pipeline.pkl\n')
-        f.write(f'flavors:\n  python_function: \n    loader_module: mlflow.sklearn\n')
-        f.write('  sklearn:\n    serialization_format: cloudpickle\n')
-
 
     # MLflow Logging
     with mlflow.start_run(run_name=f"{model_name}_Optimized") as run:
@@ -462,21 +442,11 @@ def train_optimized_model(model_name, best_params, X_train, y_train, X_test, y_t
             "training_time_seconds": training_time
         })
 
-        print("\n✅ Métricas registradas en MLflow (visualizaciones omitidas)")
-        
-        # 4. Usar la función segura: log_artifacts para subir la carpeta temporal
-        mlflow.log_artifacts(local_dir=temp_dir, artifact_path="model_artifact_pipeline")
+        print("\n✅ Métricas registradas en MLflow")
 
         run_id = run.info.run_id
-
-        print(f"\n✅ Modelo (como artefacto) registrado en MLflow")
+        print(f"\n✅ Modelo registrado en MLflow")
         print(f"   Run ID: {run_id}")
-        
-    # 5. Limpieza del directorio temporal
-    shutil.rmtree(temp_dir)
-    print(f"🧹 Directorio temporal {temp_dir} eliminado.")
-
-    # --- FIN IMPLEMENTACIÓN OPCIÓN C ---
 
     return {
         'model_name': model_name,
@@ -487,8 +457,9 @@ def train_optimized_model(model_name, best_params, X_train, y_train, X_test, y_t
         'training_time': training_time
     }
 
+
 # ============================================================================
-# MAIN WORKFLOW (Código modificado solo con la corrección de la ruta)
+# MAIN WORKFLOW
 # ============================================================================
 
 def main():
@@ -531,16 +502,16 @@ def main():
     print(f"   - Train: {len(X_train)} samples")
     print(f"   - Test:  {len(X_test)} samples")
     
-    # --- CORRECCIÓN DE RUTA DE TRACKING URI (para doble seguridad) ---
-    current_working_directory = os.getcwd()
-
-    # Configurar MLflow
-    #mlflow.set_tracking_uri(f"file:{current_working_directory}/mlruns")
-    #mlflow.set_experiment(EXPERIMENT_NAME)
-    print(f"\n✅ MLflow configurado: {EXPERIMENT_NAME}")
-    print(f"\n✅ MLflow configurado: {EXPERIMENT_NAME}")
-    print(f"   (Ruta de Tracking: {mlflow.get_tracking_uri()})")
-    # --- FIN CORRECCIÓN ---
+    # CONFIGURAR MLFLOW CON RUTA RELATIVA (CRÍTICO PARA CI/CD)
+    mlflow_dir = Path("./mlruns").absolute()
+    mlflow_dir.mkdir(exist_ok=True)
+    
+    mlflow.set_tracking_uri(f"file:{mlflow_dir}")
+    mlflow.set_experiment(EXPERIMENT_NAME)
+    
+    print(f"\n✅ MLflow configurado:")
+    print(f"   - Experimento: {EXPERIMENT_NAME}")
+    print(f"   - Tracking URI: {mlflow.get_tracking_uri()}")
 
     # Modelos a optimizar
     models_to_optimize = ["RandomForest", "GradientBoosting", "XGBoost"]
@@ -565,16 +536,6 @@ def main():
             feature_names=FEATURES,
             metadata=metadata
         )
-
-        plots_dir = Path("plots_temp")
-        plots_dir.mkdir(exist_ok=True)
-        opt_history_path = plots_dir / f"{model_name}_optimization_history.png"
-        create_optimization_history_plot(study, opt_history_path)
-
-        with mlflow.start_run(run_id=results['run_id']):
-            mlflow.log_artifact(opt_history_path)
-
-        
 
         all_results.append(results)
 
@@ -602,9 +563,6 @@ def main():
     print(f"\n🏆 MEJOR MODELO: {best_result['model_name']}")
     print(f"   - CV R2: {best_result['cv_results']['mean_r2']:.4f}")
     print(f"   - Test R2: {best_result['test_metrics']['r2_score']:.4f}")
-
-    # Guardar mejor modelo usando rutas del config
-    
 
     # Crear directorio si no existe
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -636,6 +594,7 @@ def main():
     print(f"\n{'='*70}")
     print("✅ ENTRENAMIENTO COMPLETADO")
     print(f"{'='*70}\n")
+
 
 if __name__ == "__main__":
     main()
