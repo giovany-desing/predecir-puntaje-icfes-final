@@ -32,15 +32,24 @@ jobs:
         aws-region: ${{ secrets.AWS_REGION }}
 
     - name: Pull Data with DVC
-      # Esto descargará tus datos y modelos rastreados por DVC desde S3
       run: dvc pull
+
+    # --- INICIO DEL CAMBIO CRÍTICO ---
+    - name: Force MLflow Tracking URI
+      run: |
+        # Configurar la ruta de tracking de MLflow a una ruta absoluta segura dentro del runner.
+        # Esto establece la variable de entorno para los siguientes pasos.
+        echo "MLFLOW_TRACKING_URI=file:$GITHUB_WORKSPACE/mlruns" >> $GITHUB_ENV
+        echo "MLFLOW_TRACKING_URI configurado a $GITHUB_WORKSPACE/mlruns"
+    # --- FIN DEL CAMBIO CRÍTICO ---
 
     # --- FASE 2: ENTRENAMIENTO (CI) ---
     - name: Train Model
+      # El script de Python ahora debe usar la variable de entorno configurada arriba.
       run: python train_model/train_model.py
-      # Esto genera el archivo .pkl en la carpeta /models del runner
-
+      
     # --- FASE 3: EMPAQUETADO DOCKER (CD) ---
+    # ... (el resto del workflow sigue igual)
     - name: Login to Docker Hub
       uses: docker/login-action@v2
       with:
@@ -52,13 +61,10 @@ jobs:
       with:
         context: .
         push: true
-        # Plataforma requerida por Render para evitar el error 'invalid platform'
         platforms: linux/amd64 
-        # REEMPLAZA TU_USUARIO con 3016953459
         tags: 3016953459/prediccion-icfes:latest 
 
     # --- FASE 4: DESPLIEGUE EN RENDER ---
     - name: Trigger Render Deployment
       run: |
-        # Llama al webhook para notificar a Render que hay una nueva imagen lista
         curl -X GET ${{ secrets.RENDER_DEPLOY_HOOK }}

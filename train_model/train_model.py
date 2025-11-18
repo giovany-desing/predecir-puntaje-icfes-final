@@ -535,9 +535,11 @@ def main():
     current_working_directory = os.getcwd()
 
     # Configurar MLflow
-    mlflow.set_tracking_uri(f"file:{current_working_directory}/mlruns")
-    mlflow.set_experiment(EXPERIMENT_NAME)
+    #mlflow.set_tracking_uri(f"file:{current_working_directory}/mlruns")
+    #mlflow.set_experiment(EXPERIMENT_NAME)
     print(f"\n✅ MLflow configurado: {EXPERIMENT_NAME}")
+    print(f"\n✅ MLflow configurado: {EXPERIMENT_NAME}")
+    print(f"   (Ruta de Tracking: {mlflow.get_tracking_uri()})")
     # --- FIN CORRECCIÓN ---
 
     # Modelos a optimizar
