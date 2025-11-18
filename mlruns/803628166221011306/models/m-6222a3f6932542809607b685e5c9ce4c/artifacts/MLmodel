@@ -1,0 +1,37 @@
+artifact_path: file:///Users/giovanysamaca/Desktop/predecir_puntaje_icfes/mlruns/803628166221011306/models/m-6222a3f6932542809607b685e5c9ce4c/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.11.1
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.7.2
+is_signature_from_type_hint: false
+mlflow_version: 3.6.0
+model_id: m-6222a3f6932542809607b685e5c9ce4c
+model_size_bytes: 63986303
+model_uuid: m-6222a3f6932542809607b685e5c9ce4c
+prompts: null
+run_id: edf361ff426246ecb2e93a5d8a464163
+saved_input_example_info:
+  artifact_path: input_example.json
+  pandas_orient: split
+  serving_input_path: serving_input_example.json
+  type: dataframe
+signature:
+  inputs: '[{"type": "long", "name": "MOD_RAZONA_CUANTITATIVO_PNAL", "required": true},
+    {"type": "long", "name": "MOD_LECTURA_CRITICA_PNAL", "required": true}, {"type":
+    "long", "name": "MOD_COMPETEN_CIUDADA_PNAL", "required": true}, {"type": "long",
+    "name": "MOD_INGLES_PNAL", "required": true}, {"type": "double", "name": "MOD_COMUNI_ESCRITA_PNAL",
+    "required": true}]'
+  outputs: '[{"type": "double", "required": true}]'
+  params: null
+type_hint_from_example: false
+utc_time_created: '2025-11-18 16:40:14.751486'

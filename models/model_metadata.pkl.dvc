@@ -1,0 +1,5 @@
+outs:
+- md5: e97b40a552ec78ab9490fb4f2c410da9
+  size: 556
+  hash: md5
+  path: model_metadata.pkl

@@ -1,0 +1,10 @@
+artifact_location: file:///Users/giovanysamaca/Desktop/predecir_puntaje_icfes/mlruns/803628166221011306/models/m-b77a5dfe6002471b82852ee47eca18a0/artifacts
+creation_timestamp: 1763485276946
+experiment_id: '803628166221011306'
+last_updated_timestamp: 1763485280592
+model_id: m-b77a5dfe6002471b82852ee47eca18a0
+model_type: null
+name: model
+source_run_id: 2aff83aad3344683a8df414ba6f5a21b
+status: 2
+status_message: null

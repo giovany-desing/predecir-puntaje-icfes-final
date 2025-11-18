@@ -1,0 +1,41 @@
+project:
+  name: "mlops_icfes"
+  version: "1.0.0"
+
+data:
+  raw_path: "data/raw/data_train.csv"
+  processed_path: "data/processed/data_clean.csv"
+  target_col: "PUNT_GLOBAL"
+
+    # Nombres EXACTOS del dataset
+  features:
+      - "MOD_RAZONA_CUANTITATIVO_PNAL"
+      - "MOD_LECTURA_CRITICA_PNAL"
+      - "MOD_COMPETEN_CIUDADA_PNAL"
+      - "MOD_INGLES_PNAL"
+      - "MOD_COMUNI_ESCRITA_PNAL"
+
+model:
+  dir: "models"
+  filename: "best_model.pkl"
+  metadata_filename: "model_metadata.pkl"
+  path: "models/best_model.pkl"
+  metadata_path: "models/model_metadata.pkl"
+
+training:
+  test_size: 0.2
+  random_state: 42
+  cv_folds: 5
+  optuna_trials: 50
+
+mlflow:
+  tracking_uri: "http://mlflow:5000"
+  experiment_name: "ICFES Prediction"
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+
+logging:
+  level: "INFO"
+  filename: "logs/api.log"
